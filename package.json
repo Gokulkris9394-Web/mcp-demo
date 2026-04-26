@@ -1,0 +1,13 @@
+{
+  "name": "ecommerce-demo",
+  "version": "1.0.0",
+  "description": "Demo e-commerce app",
+  "main": "app.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ci": "playwright test --reporter=html"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.37.0"
+  }
+}
