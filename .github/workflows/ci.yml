@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  test:
+    name: Run Playwright Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npx playwright install --with-deps
+      - run: npm run test:ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
+  pr-analysis:
+    name: AI-Style PR Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Analyze Changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          echo ""
+          echo "Impacted Areas:"
+          if echo "$CHANGED_FILES" | grep -q "app.js"; then
+            echo "- Login functionality"
+            echo "- Cart management"
+            echo "- Checkout process"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "styles.css"; then
+            echo "- User interface styling"
+            echo "- Visual consistency"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "index.html"; then
+            echo "- Page structure"
+            echo "- HTML elements"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "tests/"; then
+            echo "- Test coverage"
+            echo "- QA processes"
+          fi
+          echo ""
+          echo "Test Suggestions:"
+          if echo "$CHANGED_FILES" | grep -q "app.js"; then
+            echo "- Run full test suite, especially login.spec.js and checkout.spec.js"
+            echo "- Test edge cases like empty cart and invalid login"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "styles.css"; then
+            echo "- Perform visual regression tests"
+            echo "- Check responsiveness on different devices"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "index.html"; then
+            echo "- Validate HTML structure and accessibility"
+            echo "- Test form submissions and button interactions"
+          fi
+          if echo "$CHANGED_FILES" | grep -q "tests/"; then
+            echo "- Ensure new tests pass and don't break existing ones"
+            echo "- Review test coverage for new features"
+          fi
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
