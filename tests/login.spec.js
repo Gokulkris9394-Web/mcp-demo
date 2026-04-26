@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Login Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('file:///c:/Users/user/Desktop/QATD2/index.html');
+    await page.goto('http://localhost:8000/index.html');
   });
 
   test('Valid login with test_user and password123 should show products', async ({ page }) => {
